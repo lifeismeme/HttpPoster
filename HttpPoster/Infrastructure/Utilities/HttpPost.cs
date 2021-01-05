@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AngleSharp.Html.Dom;
 using HttpPoster.Infrastructure.Extensions;
-using Xunit;
 
 namespace HttpPoster.Infrastructure.Utilities
 {
@@ -13,21 +11,21 @@ namespace HttpPoster.Infrastructure.Utilities
 	{ //Wrapper for HttpClient
 		public HttpClient Client { get; set; } = new HttpClient();
 		public HttpResponseMessage LastResponse { get; set; }
-		public string RootUrl { get; set; } = "http://localhost:8080";
+		public string RootUri { get; set; } = "http://localhost:8080";
 
 		public HttpPost() { }
 		public HttpPost(string rootUrl)
 		{
-			this.RootUrl = rootUrl;
+			this.RootUri = rootUrl;
 		}
 
-		public async Task<HttpResponseMessage> Post(string uri, Dictionary<string, string> postFormValue, string expectedRedirectedPage = null)
+		public async Task<HttpResponseMessage> Post(string pageUri, Dictionary<string, string> postFormValue, string expectedRedirectedPage = null)
 		{
-			uri = $"{RootUrl}/{uri}";
+			pageUri = $"{RootUri}/{pageUri}";
 			var content = new FormUrlEncodedContent(postFormValue);
 
 			//Act
-			var response = await Client.PostAsync(uri, content);
+			var response = await Client.PostAsync(pageUri, content);
 			LastResponse = response;
 
 			//Assert
@@ -41,9 +39,9 @@ namespace HttpPoster.Infrastructure.Utilities
 			return response;
 		}
 
-		public async Task<HttpResponseMessage> PostBackWithHtmlForm(string uri, Dictionary<string, string> postFormValue, string expectedRedirectedPage = null)
+		public async Task<HttpResponseMessage> PostBackWithHtmlForm(string pageUri, Dictionary<string, string> postFormValue, string expectedRedirectedPage = null)
 		{
-			var response = await Client.GetAsync($"{RootUrl}/{uri}");
+			var response = await Client.GetAsync($"{RootUri}/{pageUri}");
 			var content = await HtmlHelper.GetDocumentAsync(response);
 
 			var form = (IHtmlFormElement)content.QuerySelector("form[action='/Sales/CreateSales']");
