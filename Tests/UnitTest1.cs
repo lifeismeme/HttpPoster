@@ -47,7 +47,32 @@ namespace Tests
 
 			//Assert
 			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-			Assert.Equal(response.RequestMessage.RequestUri.ToString().ToLower(), expectedRedirectedPage);
+			Assert.Equal(response.RequestMessage.RequestUri.ToString().ToLower(), (ROOT_URI + '/' + expectedRedirectedPage).ToLower());
+		}
+
+		[Fact]
+		public async void LoginWithForm_FormValue_SuccessWithRedirectedAsync()
+		{
+			var post = new Dictionary<string, string>()
+			{
+				{ "Email", "user@email.com" },
+				{ "Password", "123456" }
+			};
+			string loginPage = "login";
+			string expectedRedirectedPage = "dashBoard";
+			var selector = new HttpPost.CssSelectorForDom()
+			{
+				Form = "form.login-form"
+			};
+
+			var Poster = new HttpPost(ROOT_URI);
+
+			//Act
+			var response = await Poster.PostBackWithHtmlForm(loginPage, selector, post, expectedRedirectedPage);
+
+			//Assert
+			Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+			Assert.Equal(response.RequestMessage.RequestUri.ToString().ToLower(), (ROOT_URI + '/'+ expectedRedirectedPage).ToLower());
 		}
 
 		[Fact]

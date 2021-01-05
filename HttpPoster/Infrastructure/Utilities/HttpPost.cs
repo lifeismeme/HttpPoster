@@ -16,7 +16,7 @@ namespace HttpPoster.Infrastructure.Utilities
 		public HttpPost() { }
 		public HttpPost(string rootUrl)
 		{
-			this.RootUri = rootUrl;
+			this.RootUri = rootUrl.TrimEnd('/');
 		}
 
 		public async Task<HttpResponseMessage> Post(string pageUri, Dictionary<string, string> postFormValue, string expectedRedirectedPage = null)
@@ -31,7 +31,8 @@ namespace HttpPoster.Infrastructure.Utilities
 			//Assert
 			//string html = await response.Content.ReadAsStringAsync();
 			string requestUri = response.RequestMessage.RequestUri.ToString();
-			if (expectedRedirectedPage != null && expectedRedirectedPage.ToLower() != requestUri)
+			if (expectedRedirectedPage != null 
+				&& (RootUri + '/' + expectedRedirectedPage).ToLower() != requestUri.ToLower())
 				throw new Exception($"Unexpected rediction of page: {requestUri}");
 
 			response.EnsureSuccessStatusCode();
@@ -39,23 +40,27 @@ namespace HttpPoster.Infrastructure.Utilities
 			return response;
 		}
 
-		public async Task<HttpResponseMessage> PostBackWithHtmlForm(string pageUri, Dictionary<string, string> postFormValue, string expectedRedirectedPage = null)
+		public async Task<HttpResponseMessage> PostBackWithHtmlForm(string pageUri, CssSelectorForDom selector, Dictionary<string, string> postFormValue, string expectedRedirectedPage = null)
 		{
 			var response = await Client.GetAsync($"{RootUri}/{pageUri}");
 			var content = await HtmlHelper.GetDocumentAsync(response);
 
-			var form = (IHtmlFormElement)content.QuerySelector("form[action='/Sales/CreateSales']");
-			var btn = (IHtmlButtonElement)content.QuerySelector("button[type='submit']");
+			IHtmlFormElement form = (IHtmlFormElement)content.QuerySelector(selector.Form);
+			IHtmlButtonElement btnSubmit = (IHtmlButtonElement)content.QuerySelector(selector.SubmitButton);
 
 			//Act
-			HttpResponseMessage result = await Client.SendAsync(form, btn, postFormValue);
+			HttpResponseMessage result = await Client.SendAsync(form, btnSubmit, postFormValue);
 			LastResponse = result;
 
 			//Assert
 
-			string requestUri = response.RequestMessage.RequestUri.ToString();
-			if (expectedRedirectedPage != null && expectedRedirectedPage.ToLower() != requestUri)
-				throw new Exception($"Unexpected rediction of page: {requestUri}");
+			string requestUri = result.RequestMessage.RequestUri.ToString();
+			if (expectedRedirectedPage != null)
+			{
+				string expectedUri = (RootUri + '/' + expectedRedirectedPage).ToLower();
+				if (expectedUri != requestUri.ToLower())
+					throw new Exception($"Unexpected rediction of page: {requestUri}");
+			}
 
 			response.EnsureSuccessStatusCode();
 			/*Success might not be determined correctly 
@@ -63,6 +68,12 @@ namespace HttpPoster.Infrastructure.Utilities
 			 * but use JavaScript or Dom UI element to indicate error instead.
 			 */
 			return result;
+		}
+
+		public class CssSelectorForDom
+		{ //for targeting DOM elements via CSS selector string
+			public string Form { get; set; } = "form[action]";
+			public string SubmitButton { get; set; } = "form button[type='submit']";
 		}
 	}
 }
