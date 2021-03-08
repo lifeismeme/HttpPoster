@@ -35,7 +35,8 @@ namespace HttpPoster.Infrastructure.Utilities
 				&& (RootUri + '/' + expectedRedirectedPage).ToLower() != requestUri.ToLower())
 				throw new Exception($"Unexpected rediction of page: {requestUri}");
 
-			response.EnsureSuccessStatusCode();
+			if (response.StatusCode != System.Net.HttpStatusCode.OK)
+				throw new HttpRequestException(await response.Content.ReadAsStringAsync());
 
 			return response;
 		}
@@ -62,7 +63,9 @@ namespace HttpPoster.Infrastructure.Utilities
 					throw new Exception($"Unexpected rediction of page: {requestUri}");
 			}
 
-			response.EnsureSuccessStatusCode();
+			if (response.StatusCode != System.Net.HttpStatusCode.OK)
+				throw new HttpRequestException(await response.Content.ReadAsStringAsync());
+
 			/*Success might not be determined correctly 
 			 * due to Server still response Http status 200 OK
 			 * but use JavaScript or Dom UI element to indicate error instead.
